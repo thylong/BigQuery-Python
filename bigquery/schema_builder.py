@@ -76,7 +76,7 @@ def describe_field(k, v, timestamp_parser=default_timestamp_parser):
     if bq_type == "record":
         try:
             field['fields'] = schema_from_record(v, timestamp_parser)
-        except InvalidTypeException, e:
+        except InvalidTypeException as e:
             # recursively construct the key causing the error
             raise InvalidTypeException("%s.%s" % (k, e.key), e.value)
 

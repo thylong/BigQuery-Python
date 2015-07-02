@@ -129,7 +129,7 @@ class TestSchemaGenerator(unittest.TestCase):
 
         try:
             schema_from_record({"a": {"b": [{"c": None}]}})
-        except InvalidTypeException, e:
+        except InvalidTypeException as e:
             key = e.key
             value = e.value
 

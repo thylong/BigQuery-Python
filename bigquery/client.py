@@ -266,7 +266,7 @@ class BigQueryClient(object):
                 projectId=self.project_id,
                 tableId=table,
                 datasetId=dataset).execute()
-        except HttpError, e:
+        except HttpError as e:
             if int(e.resp['status']) == 404:
                 logging.warn('Table %s.%s does not exist', dataset, table)
                 return None
