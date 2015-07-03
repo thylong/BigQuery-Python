@@ -1,5 +1,4 @@
 import unittest
-
 import mock
 from nose.tools import raises
 
@@ -10,10 +9,16 @@ from bigquery.errors import (
     BigQueryTimeoutException
 )
 
+from six import assertCountEqual
+try:
+    import builtins
+except ImportError:
+    import __builtin__ as builtins
+
 
 class HttpResponse(object):
 
-    def __init__(self, status, reason='There was an error'):
+    def __init__(self, status, reason=b'There was an error'):
         """
         Args:
             :param int status: Integer HTTP response status
@@ -66,8 +71,8 @@ class TestGetClient(unittest.TestCase):
                                           scope=BIGQUERY_SCOPE_READ_ONLY)
         mock_cred.authorize.assert_called_once()
         mock_build.assert_called_once_with('bigquery', 'v2', http=mock_http)
-        self.assertEquals(mock_bq, bq_client.bigquery)
-        self.assertEquals(project_id, bq_client.project_id)
+        self.assertEqual(mock_bq, bq_client.bigquery)
+        self.assertEqual(project_id, bq_client.project_id)
 
     @mock.patch('bigquery.client._credentials')
     @mock.patch('bigquery.client.build')
@@ -96,12 +101,12 @@ class TestGetClient(unittest.TestCase):
                                           scope=BIGQUERY_SCOPE)
         mock_cred.authorize.assert_called_once()
         mock_build.assert_called_once_with('bigquery', 'v2', http=mock_http)
-        self.assertEquals(mock_bq, bq_client.bigquery)
-        self.assertEquals(project_id, bq_client.project_id)
+        self.assertEqual(mock_bq, bq_client.bigquery)
+        self.assertEqual(project_id, bq_client.project_id)
 
     @mock.patch('bigquery.client._credentials')
     @mock.patch('bigquery.client.build')
-    @mock.patch('__builtin__.open')
+    @mock.patch('builtins.open')
     def test_initialize_key_file(self, mock_open, mock_build,
                                  mock_return_cred):
         """Ensure that a BigQueryClient is initialized and returned with
@@ -131,8 +136,8 @@ class TestGetClient(unittest.TestCase):
                                           scope=BIGQUERY_SCOPE)
         mock_cred.authorize.assert_called_once()
         mock_build.assert_called_once_with('bigquery', 'v2', http=mock_http)
-        self.assertEquals(mock_bq, bq_client.bigquery)
-        self.assertEquals(project_id, bq_client.project_id)
+        self.assertEqual(mock_bq, bq_client.bigquery)
+        self.assertEqual(project_id, bq_client.project_id)
 
 
 class TestQuery(unittest.TestCase):
@@ -171,8 +176,8 @@ class TestQuery(unittest.TestCase):
             body={'query': self.query, 'timeoutMs': 0, 'dryRun': False,
                   'maxResults': None}
         )
-        self.assertEquals(job_id, 'spiderman')
-        self.assertEquals(results, [])
+        self.assertEqual(job_id, 'spiderman')
+        self.assertEqual(results, [])
 
     def test_query_max_results_set(self):
         """Ensure that we retrieve the job id from the query and the maxResults
@@ -199,8 +204,8 @@ class TestQuery(unittest.TestCase):
             body={'query': self.query, 'timeoutMs': 0,
                   'maxResults': max_results, 'dryRun': False}
         )
-        self.assertEquals(job_id, 'spiderman')
-        self.assertEquals(results, [])
+        self.assertEqual(job_id, 'spiderman')
+        self.assertEqual(results, [])
 
     def test_query_timeout_set(self):
         """Ensure that we retrieve the job id from the query and the timeoutMs
@@ -226,8 +231,8 @@ class TestQuery(unittest.TestCase):
             body={'query': self.query, 'timeoutMs': timeout * 1000,
                   'dryRun': False, 'maxResults': None}
         )
-        self.assertEquals(job_id, 'spiderman')
-        self.assertEquals(results, [])
+        self.assertEqual(job_id, 'spiderman')
+        self.assertEqual(results, [])
 
     def test_sync_query_timeout(self):
         """Ensure that exception is raise on timeout for synchronous query"""
@@ -262,8 +267,8 @@ class TestQuery(unittest.TestCase):
         self.mock_job_collection.query.return_value = mock_query_job
 
         job_id, results = self.client.query(self.query)
-        self.assertEquals(job_id, 'spiderman')
-        self.assertEquals(results, [])
+        self.assertEqual(job_id, 'spiderman')
+        self.assertEqual(results, [])
 
     def test_query_dry_run_valid(self):
         """Ensure that None and an empty list is returned from the query when
@@ -295,7 +300,7 @@ class TestQuery(unittest.TestCase):
         mock_query_job = mock.Mock()
 
         mock_query_job.execute.side_effect = HttpError(
-            'crap', '{"message": "Bad query"}')
+            'crap', b'{"message": "Bad query"}')
 
         self.mock_job_collection.query.return_value = mock_query_job
 
@@ -336,8 +341,8 @@ class TestQuery(unittest.TestCase):
             body={'query': self.query, 'timeoutMs': 0, 'dryRun': False,
                   'maxResults': None}
         )
-        self.assertEquals(job_id, 'spiderman')
-        self.assertEquals(results, [{'foo': 10}])
+        self.assertEqual(job_id, 'spiderman')
+        self.assertEqual(results, [{'foo': 10}])
 
 
 class TestGetQueryResults(unittest.TestCase):
@@ -370,14 +375,18 @@ class TestGetQueryResults(unittest.TestCase):
         page_token = "token"
         timeout = 1
 
-        actual = self.client.get_query_results(job_id, offset, limit, page_token, timeout)
+        actual = self.client.get_query_results(job_id,
+                                               offset,
+                                               limit,
+                                               page_token,
+                                               timeout)
 
         self.mock_job_collection.getQueryResults.assert_called_once_with(
             projectId=self.project_id, jobId=job_id, startIndex=offset,
             maxResults=limit, pageToken=page_token, timeoutMs=1000)
 
         mock_query_job.execute.assert_called_once()
-        self.assertEquals(actual, mock_query_reply)
+        self.assertEqual(actual, mock_query_reply)
 
 
 class TestTransformRow(unittest.TestCase):
@@ -411,7 +420,7 @@ class TestTransformRow(unittest.TestCase):
 
         actual = self.client._transform_row(row, schema)
 
-        self.assertEquals(actual, expected)
+        self.assertEqual(actual, expected)
 
     def test_transform_row_with_nested(self):
         """Ensure that the row dict with nested records is correctly
@@ -432,7 +441,7 @@ class TestTransformRow(unittest.TestCase):
 
         actual = self.client._transform_row(row, schema)
 
-        self.assertEquals(actual, expected)
+        self.assertEqual(actual, expected)
 
     def test_transform_row_with_nested_repeated(self):
         """Ensure that the row dict with nested repeated records is correctly
@@ -455,7 +464,7 @@ class TestTransformRow(unittest.TestCase):
 
         actual = self.client._transform_row(row, schema)
 
-        self.assertEquals(actual, expected)
+        self.assertEqual(actual, expected)
 
 
 @mock.patch('bigquery.client.BigQueryClient.get_query_results')
@@ -474,7 +483,7 @@ class TestCheckJob(unittest.TestCase):
         is_completed, total_rows = self.client.check_job(1)
 
         self.assertFalse(is_completed)
-        self.assertEquals(total_rows, 0)
+        self.assertEqual(total_rows, 0)
 
     def test_query_complete(self, mock_exec):
         """Ensure that we can handle a normal query result."""
@@ -497,7 +506,7 @@ class TestCheckJob(unittest.TestCase):
         is_completed, total_rows = self.client.check_job(1)
 
         self.assertTrue(is_completed)
-        self.assertEquals(total_rows, 2)
+        self.assertEqual(total_rows, 2)
 
 
 class TestWaitForJob(unittest.TestCase):
@@ -924,11 +933,8 @@ class TestExportDataToURIs(unittest.TestCase):
         }
 
         self.mock_api.jobs().insert().execute.return_value = expected_result
-        self.assertRaises(JobInsertException,
-                          self.client.export_data_to_uris,
-                          ["destinationuri"],
-                          self.dataset_id,
-                          self.table_id)
+        self.assertRaises(JobInsertException, self.client.export_data_to_uris,
+                          ["destinationuri"], self.dataset_id, self.table_id)
 
 
 class TestWriteToTable(unittest.TestCase):
@@ -1024,7 +1030,7 @@ class TestFilterTablesByTime(unittest.TestCase):
 
         bq = client.BigQueryClient(None, 'project')
 
-        tables = bq._filter_tables_by_time({}, 1370000000, 0)
+        tables = bq._filter_tables_by_time([], 1370000000, 0)
 
         self.assertEqual([], tables)
 
@@ -1033,16 +1039,16 @@ class TestFilterTablesByTime(unittest.TestCase):
 
         bq = client.BigQueryClient(None, 'project')
 
-        tables = bq._filter_tables_by_time({
-            'Spider-Man': 1370002001,
-            'Daenerys Targaryen': 1370001999,
-            'Gordon Freeman': 1369999999,
-            'William Shatner': 1370001000,
-            'Heavy Weapons Guy': 0
-        }, 1370002000, 1370000000)
+        tables = bq._filter_tables_by_time([
+            {'Spider-Man': 1370002001},
+            {'Daenerys Targaryen': 1370001999},
+            {'Gordon Freeman': 1369999999},
+            {'William Shatner': 1370001000},
+            {'Heavy Weapons Guy': 0}
+        ], 1370002000, 1370000000)
 
         self.assertEqual(
-            ['Daenerys Targaryen', 'William Shatner', 'Gordon Freeman'],
+            ['Daenerys Targaryen', 'Gordon Freeman', 'William Shatner'],
             tables
         )
 
@@ -1053,12 +1059,12 @@ class TestFilterTablesByTime(unittest.TestCase):
 
         bq = client.BigQueryClient(None, 'project')
 
-        tables = bq._filter_tables_by_time({
-            'John Snow': 9001,
-            'Adam West': 100000000000000,
-            'Glados': -1,
-            'Potato': 0,
-        }, 1370002000, 1370000000)
+        tables = bq._filter_tables_by_time([
+            {'John Snow': 9001},
+            {'Adam West': 100000000000000},
+            {'Glados': -1},
+            {'Potato': 0},
+        ], 1370002000, 1370000000)
 
         self.assertEqual([], tables)
 
@@ -1191,7 +1197,7 @@ class TestGetQuerySchema(unittest.TestCase):
 
         result_schema = bq.get_query_schema(job_id=123)
 
-        self.assertEquals(result_schema, 'This is our schema')
+        self.assertEqual(result_schema, 'This is our schema')
 
     def test_query_incomplete(self, get_query_mock):
         """Ensure that get_query_schema handles scenarios where the query
@@ -1242,7 +1248,7 @@ class TestGetTableSchema(unittest.TestCase):
     def test_table_does_not_exist(self):
         """Ensure that None is returned if the table doesn't exist."""
         self.mock_tables.get.return_value.execute.side_effect = \
-            HttpError({'status': "404"}, '{}')
+            HttpError({'status': "404"}, b'{}')
 
         self.assertIsNone(
             self.client.get_table_schema(self.dataset, self.table))
@@ -1279,7 +1285,7 @@ class TestGetQueryRows(unittest.TestCase):
 
         expected_rows = [{'foo': 'bar', 'spider': 'man'},
                          {'foo': 'abc', 'spider': 'xyz'}]
-        self.assertEquals(result_rows, expected_rows)
+        self.assertEqual(result_rows, expected_rows)
 
     def test_query_complete_with_page_token(self, get_query_mock):
         """Ensure that get_query_rows works with page token."""
@@ -1350,7 +1356,7 @@ class TestGetQueryRows(unittest.TestCase):
                          {'first_name': 'abc', 'last_name': 'xyz'},
                          {'first_name': 'the', 'last_name': 'beatles'},
                          {'first_name': 'monty', 'last_name': 'python'}]
-        self.assertEquals(result_rows, expected_rows)
+        self.assertEqual(result_rows, expected_rows)
 
     def test_query_incomplete(self, get_query_mock):
         """Ensure that get_query_rows handles scenarios where the query is not
@@ -1394,7 +1400,7 @@ class TestCheckTable(unittest.TestCase):
         """Ensure that if the table does not exist, False is returned."""
 
         self.mock_tables.get.return_value.execute.side_effect = (
-            HttpError(HttpResponse(404), 'There was an error'))
+            HttpError(HttpResponse(404), b'There was an error'))
 
         actual = self.client.check_table(self.dataset, self.table)
 
@@ -1447,7 +1453,7 @@ class TestCreateTable(unittest.TestCase):
         or if swallow_results is False an empty dict is returned."""
 
         self.mock_tables.insert.return_value.execute.side_effect = (
-            HttpError(HttpResponse(404), 'There was an error'))
+            HttpError(HttpResponse(404), b'There was an error'))
 
         actual = self.client.create_table(self.dataset, self.table,
                                           self.schema)
@@ -1518,7 +1524,7 @@ class TestCreateView(unittest.TestCase):
         or if swallow_results is False an empty dict is returned."""
 
         self.mock_tables.insert.return_value.execute.side_effect = (
-            HttpError(HttpResponse(404), 'There was an error'))
+            HttpError(HttpResponse(404), b'There was an error'))
 
         actual = self.client.create_view(self.dataset, self.table,
                                          self.query)
@@ -1582,7 +1588,7 @@ class TestDeleteTable(unittest.TestCase):
         or the actual response is swallow_results is False."""
 
         self.mock_tables.delete.return_value.execute.side_effect = (
-            HttpError(HttpResponse(404), 'There was an error'))
+            HttpError(HttpResponse(404), b'There was an error'))
 
         actual = self.client.delete_table(self.dataset, self.table)
 
@@ -1645,7 +1651,7 @@ class TestParseTableListReponse(unittest.TestCase):
             'appspot': {'2013_05_appspot': 1367366400}
         }
 
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
     def test_empty_parse(self):
         """Ensures we can parse an empty dictionary."""
@@ -1654,7 +1660,7 @@ class TestParseTableListReponse(unittest.TestCase):
 
         tables = bq._parse_table_list_response({})
 
-        self.assertEquals(tables, {})
+        self.assertEqual(tables, {})
 
     def test_error(self):
         """Ensures we can handle parsing a response error."""
@@ -1678,7 +1684,7 @@ class TestParseTableListReponse(unittest.TestCase):
 
         tables = bq._parse_table_list_response(error_response)
 
-        self.assertEquals(tables, {})
+        self.assertEqual(tables, {})
 
     def test_incorrect_table_formats(self):
         """Ensures we can parse incorrectly formatted table ids."""
@@ -1716,7 +1722,7 @@ class TestParseTableListReponse(unittest.TestCase):
 
         tables = bq._parse_table_list_response(list_response)
 
-        self.assertEquals(tables, {})
+        self.assertEqual(tables, {})
 
 
 class TestPushRows(unittest.TestCase):
@@ -1784,7 +1790,7 @@ class TestPushRows(unittest.TestCase):
     def test_push_exception(self):
         """Ensure that if insertAll raises an exception, False is returned."""
 
-        e = HttpError(HttpResponse(404), 'There was an error')
+        e = HttpError(HttpResponse(404), b'There was an error')
         self.mock_table_data.insertAll.return_value.execute.side_effect = e
 
         actual = self.client.push_rows(self.dataset, self.table, self.rows,
@@ -1877,7 +1883,7 @@ class TestGetAllTables(unittest.TestCase):
         }
 
         tables = bq._get_all_tables('dataset', cache=False)
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
     def test_get_all_tables_with_page_token(self):
         """Ensure get_all_tables fetches all tables names from BigQuery"""
@@ -1907,7 +1913,7 @@ class TestGetAllTables(unittest.TestCase):
             'appspot-11': {'2013_06_appspot_11': 1370044800},
         }
         tables = bq._get_all_tables('dataset', cache=False)
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
     def test_get_all_tables_with_cache(self):
         """Ensure get_all_tables uses cache when fetching"""
@@ -1933,12 +1939,12 @@ class TestGetAllTables(unittest.TestCase):
         }
 
         tables = bq._get_all_tables('dataset', cache=True)
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
         mock_execute.execute.side_effect = [NEXT_TABLE_LIST_RESPONSE,
                                             FULL_TABLE_LIST_RESPONSE]
         tables = bq._get_all_tables('dataset', cache=True)
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
         expected_result = {
             'appspot-3': {'2013_06_appspot_3': 1370044800},
@@ -1953,7 +1959,7 @@ class TestGetAllTables(unittest.TestCase):
             'appspot-11': {'2013_06_appspot_11': 1370044800},
         }
         tables = bq._get_all_tables('dataset', cache=False)
-        self.assertEquals(expected_result, tables)
+        self.assertEqual(expected_result, tables)
 
 
 class TestGetTables(unittest.TestCase):
@@ -1973,7 +1979,7 @@ class TestGetTables(unittest.TestCase):
         bq = client.BigQueryClient(mock_bq_service, 'project')
 
         tables = bq.get_tables('dataset', 'appspot-1', 0, 10000000000)
-        self.assertItemsEqual(tables, ['2013_06_appspot_1'])
+        assertCountEqual(self, tables, ['2013_06_appspot_1'])
 
     def test_get_tables_from_datetimes(self):
         """Ensure tables falling in the time window, specified with datetimes,
@@ -1996,7 +2002,7 @@ class TestGetTables(unittest.TestCase):
         end = datetime(2013, 7, 10)
 
         tables = bq.get_tables('dataset', 'appspot-1', start, end)
-        self.assertItemsEqual(tables, ['2013_06_appspot_1'])
+        assertCountEqual(self, tables, ['2013_06_appspot_1'])
 
 
 #
@@ -2027,7 +2033,7 @@ class TestCreateDataset(unittest.TestCase):
         """Ensure that if creating the table fails, False is returned."""
 
         self.mock_datasets.insert.return_value.execute.side_effect = \
-            HttpError(HttpResponse(404), 'There was an error')
+            HttpError(HttpResponse(404), b'There was an error')
 
         actual = self.client.create_dataset(self.dataset,
                                             friendly_name=self.friendly_name,
@@ -2096,7 +2102,7 @@ class TestDeleteDataset(unittest.TestCase):
         """Ensure that if deleting table fails, False is returned."""
 
         self.mock_datasets.delete.return_value.execute.side_effect = \
-            HttpError(HttpResponse(404), 'There was an error')
+            HttpError(HttpResponse(404), b'There was an error')
 
         actual = self.client.delete_dataset(self.dataset)
 
@@ -2254,7 +2260,8 @@ class TestGetDatasets(unittest.TestCase):
         bq = client.BigQueryClient(mock_bq_service, 'project')
 
         datasets = bq.get_datasets()
-        self.assertItemsEqual(datasets, FULL_DATASET_LIST_RESPONSE['datasets'])
+        assertCountEqual(self, datasets,
+                         FULL_DATASET_LIST_RESPONSE['datasets'])
 
     def test_get_datasets_returns_no_list(self):
         """Ensure we handle the no datasets case"""
@@ -2273,7 +2280,7 @@ class TestGetDatasets(unittest.TestCase):
         bq = client.BigQueryClient(mock_bq_service, 'project')
 
         datasets = bq.get_datasets()
-        self.assertItemsEqual(datasets, [])
+        assertCountEqual(self, datasets, [])
 
 
 class TestUpdateDataset(unittest.TestCase):
@@ -2301,7 +2308,7 @@ class TestUpdateDataset(unittest.TestCase):
         """Ensure that if creating the table fails, False is returned."""
 
         self.mock_datasets.update.return_value.execute.side_effect = \
-            HttpError(HttpResponse(404), 'There was an error')
+            HttpError(HttpResponse(404), b'There was an error')
 
         actual = self.client.update_dataset(self.dataset,
                                             friendly_name=self.friendly_name,

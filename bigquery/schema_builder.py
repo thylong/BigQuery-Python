@@ -4,7 +4,7 @@ from datetime import datetime
 
 import dateutil.parser
 
-from errors import InvalidTypeException
+from .errors import InvalidTypeException
 
 
 def default_timestamp_parser(s):
@@ -100,7 +100,7 @@ def bigquery_type(o, timestamp_parser=default_timestamp_parser):
     t = type(o)
     if t == int:
         return "integer"
-    elif t == str or t == unicode:
+    elif t == str:
         if timestamp_parser and timestamp_parser(o):
             return "timestamp"
         else:

@@ -7,33 +7,34 @@ class TestRenderSelect(unittest.TestCase):
         """Ensure that render select can handle multiple selects."""
         from bigquery.query_builder import _render_select
 
-        result = _render_select({
-            'start_time': {'alias': 'TimeStamp'},
-            'max_log_level': {'alias': 'MaxLogLevel'},
-            'user': {'alias': 'User'},
-            'status': {'alias': 'Status'},
-            'resource': {'alias': 'URL'},
-            'version_id': {'alias': 'Version'},
-            'latency': {'alias': 'Latency'},
-            'ip': {'alias': 'IP'},
-            'app_logs': {'alias': 'AppLogs'}})
+        result = _render_select([
+            {'field': 'start_time', 'alias': 'TimeStamp'},
+            {'field': 'max_log_level', 'alias': 'MaxLogLevel'},
+            {'field': 'user', 'alias': 'User'},
+            {'field': 'status', 'alias': 'Status'},
+            {'field': 'resource', 'alias': 'URL'},
+            {'field': 'version_id', 'alias': 'Version'},
+            {'field': 'latency', 'alias': 'Latency'},
+            {'field': 'ip', 'alias': 'IP'},
+            {'field': 'app_logs', 'alias': 'AppLogs'}])
 
-        expected = 'SELECT status as Status, latency as Latency, ' \
-                   'max_log_level as MaxLogLevel, resource as URL, user as ' \
-                   'User, ip as IP, start_time as TimeStamp, version_id as ' \
-                   'Version, app_logs as AppLogs'
+        expected = 'SELECT start_time as TimeStamp, max_log_level as MaxLogLevel, ' \
+                   'user as User, status as Status, ' \
+                   'resource as URL, version_id as Version, ' \
+                   'latency as Latency, ip as IP, ' \
+                   'app_logs as AppLogs'
+
         self.assertEqual(expected, result)
 
     def test_casting(self):
         """Ensure that render select can handle custom casting."""
         from bigquery.query_builder import _render_select
 
-        result = _render_select({
-            'start_time': {
-                'alias': 'TimeStamp',
-                'format': 'SEC_TO_MICRO-INTEGER-FORMAT_UTC_USEC'
-            }
-        })
+        result = _render_select([{
+            'field': 'start_time',
+            'alias': 'TimeStamp',
+            'format': 'SEC_TO_MICRO-INTEGER-FORMAT_UTC_USEC'
+        }])
 
         self.assertEqual(
             result,
@@ -202,14 +203,17 @@ class TestRenderConditions(unittest.TestCase):
             }
         ])
 
-        self.assertEqual(result, "WHERE ((foobar IN (STRING('a'), STRING('b'))"
-                                 " AND foobar IN (STRING('c'), STRING('d')) "
-                                 "AND foobar IN (STRING('e'), STRING('f')) AND"
-                                 " foobar IN (STRING('g'))) AND (NOT foobar IN"
-                                 " (STRING('h'), STRING('i')) AND NOT foobar "
-                                 "IN (STRING('k'), STRING('j')) AND NOT foobar"
-                                 " IN (STRING('l'), STRING('m')) AND NOT "
-                                 "foobar IN (STRING('n'))))")
+        expected = "WHERE ((foobar IN (STRING('a'), STRING('b'))" \
+                   " AND foobar IN (STRING('c'), STRING('d')) " \
+                   "AND foobar IN (STRING('e'), STRING('f')) AND" \
+                   " foobar IN (STRING('g'))) AND (NOT foobar IN" \
+                   " (STRING('h'), STRING('i')) AND NOT foobar " \
+                   "IN (STRING('k'), STRING('j')) AND NOT foobar" \
+                   " IN (STRING('l'), STRING('m')) AND NOT " \
+                   "foobar IN (STRING('n'))))"
+        print(result)
+        print(expected)
+        self.assertEqual(result, expected)
 
 
 class TestRenderOrder(unittest.TestCase):
@@ -261,11 +265,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {
                     'field': 'start_time',
@@ -293,9 +297,9 @@ class TestRenderQuery(unittest.TestCase):
             groupings=['timestamp', 'status'],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
-                          "resource as url FROM [dataset.2013_06_appspot_1]"
-                          " WHERE (start_time <= INTEGER('1371566954')) AND "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
+                          "resource as url FROM [dataset.2013_06_appspot_1] "
+                          "WHERE (start_time <= INTEGER('1371566954')) AND "
                           "(start_time >= INTEGER('1371556954')) GROUP BY "
                           "timestamp, status ORDER BY timestamp desc")
         self.assertEqual(result, expected_query)
@@ -307,15 +311,15 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1]   ORDER BY "
                           "timestamp desc")
@@ -330,11 +334,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'asdfasdfasdf': 'start_time', 'ffd': 1371566954, 'comparator':
                     '<=', 'type': 'INTEGER'},
@@ -344,7 +348,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1]   ORDER BY "
                           "timestamp desc")
@@ -358,11 +362,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -385,7 +389,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
@@ -403,11 +407,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'resource', 'comparators': [{'condition': 'CONTAINS',
                                                        'value': 'foo',
@@ -416,7 +420,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (NOT resource "
                           "CONTAINS STRING('foo'))  ORDER BY timestamp desc")
@@ -431,11 +435,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'resource', 'comparators': [{'condition': 'CONTAINS',
                                                        'value': 'foo',
@@ -450,7 +454,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (NOT resource "
                           "CONTAINS STRING('foo') AND NOT resource CONTAINS "
@@ -465,11 +469,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -482,7 +486,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
@@ -496,11 +500,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -513,7 +517,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'feeld': 'timestamp', 'dir': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
@@ -527,7 +531,7 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={},
+            select=[],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -553,11 +557,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {},
-                'status': {},
-                'resource': {}
-            },
+            select=[
+                {'field': 'start_time'},
+                {'field': 'status'},
+                {'field': 'resource'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -570,7 +574,7 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'start_time', 'direction': 'desc'})
 
-        expected_query = ("SELECT status , start_time , resource  FROM "
+        expected_query = ("SELECT start_time , status , resource  FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
                           "INTEGER('1371556954'))  ORDER BY start_time desc")
@@ -583,14 +587,13 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {
-                    'alias': 'timestamp',
-                    'format': 'INTEGER-FORMAT_UTC_USEC'
-                },
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time',
+                 'alias': 'timestamp',
+                 'format': 'INTEGER-FORMAT_UTC_USEC'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -603,58 +606,12 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, "
-                          "FORMAT_UTC_USEC(INTEGER(start_time)) as timestamp, "
+        expected_query = ("SELECT FORMAT_UTC_USEC(INTEGER(start_time)) "
+                          "as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
                           "INTEGER('1371556954'))  ORDER BY timestamp desc")
-        self.assertEqual(result, expected_query)
-
-    def test_formatting_duplicate_columns(self):
-        """Ensure that render query runs with formatting a select for a
-        column selected twice.
-        """
-        from bigquery.query_builder import render_query
-
-        result = render_query(
-            dataset='dataset',
-            tables=['2013_06_appspot_1'],
-            select={
-                'start_time': [
-                    {
-                        'alias': 'timestamp',
-                        'format': 'INTEGER-FORMAT_UTC_USEC'
-                    },
-                    {
-                        'alias': 'day',
-                        'format': ('SEC_TO_MICRO-INTEGER-'
-                                   'FORMAT_UTC_USEC-LEFT:10')
-                    }
-                ],
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
-            conditions=[
-                {'field': 'start_time', 'comparators': [{'condition': '<=',
-                                                         'value': 1371566954,
-                                                         'negate': False}],
-                 'type': 'INTEGER'},
-                {'field': 'start_time', 'comparators': [{'condition': '>=',
-                                                         'value': 1371556954,
-                                                         'negate': False}],
-                 'type': 'INTEGER'},
-            ],
-            order_by={'field': 'timestamp', 'direction': 'desc'})
-
-        expected_query = ("SELECT status as status, "
-                          "FORMAT_UTC_USEC(INTEGER(start_time)) as timestamp, "
-                          "LEFT(FORMAT_UTC_USEC(INTEGER(start_time*1000000)),"
-                          "10) as day, resource as url FROM "
-                          "[dataset.2013_06_appspot_1] WHERE "
-                          "(start_time <= INTEGER('1371566954')) AND "
-                          "(start_time >= INTEGER('1371556954'))  ORDER BY "
-                          "timestamp desc")
         self.assertEqual(result, expected_query)
 
     def test_sec_to_micro_formatting(self):
@@ -666,14 +623,12 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {
-                    'alias': 'timestamp',
-                    'format': 'SEC_TO_MICRO-INTEGER-SEC_TO_TIMESTAMP'
-                },
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp',
+                 'format': 'SEC_TO_MICRO-INTEGER-SEC_TO_TIMESTAMP'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -686,9 +641,9 @@ class TestRenderQuery(unittest.TestCase):
             ],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, "
-                          "SEC_TO_TIMESTAMP(INTEGER(start_time*1000000)) as "
-                          "timestamp, resource as url FROM "
+        expected_query = ("SELECT SEC_TO_TIMESTAMP(INTEGER(start_time*1000000)"
+                          ") as timestamp, status as status, "
+                          "resource as url FROM "
                           "[dataset.2013_06_appspot_1] WHERE (start_time "
                           "<= INTEGER('1371566954')) AND (start_time >= "
                           "INTEGER('1371556954'))  ORDER BY timestamp desc")
@@ -703,11 +658,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset=None,
             tables=None,
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -729,15 +684,15 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             groupings=[],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1]   ORDER BY "
                           "timestamp desc")
@@ -750,11 +705,11 @@ class TestRenderQuery(unittest.TestCase):
         result = render_query(
             dataset='dataset',
             tables=['2013_06_appspot_1', '2013_07_appspot_1'],
-            select={
-                'start_time': {'alias': 'timestamp'},
-                'status': {'alias': 'status'},
-                'resource': {'alias': 'url'}
-            },
+            select=[
+                {'field': 'start_time', 'alias': 'timestamp'},
+                {'field': 'status', 'alias': 'status'},
+                {'field': 'resource', 'alias': 'url'}
+            ],
             conditions=[
                 {'field': 'start_time', 'comparators': [{'condition': '<=',
                                                          'value': 1371566954,
@@ -768,7 +723,7 @@ class TestRenderQuery(unittest.TestCase):
             groupings=['timestamp', 'status'],
             order_by={'field': 'timestamp', 'direction': 'desc'})
 
-        expected_query = ("SELECT status as status, start_time as timestamp, "
+        expected_query = ("SELECT start_time as timestamp, status as status, "
                           "resource as url FROM "
                           "[dataset.2013_06_appspot_1], "
                           "[dataset.2013_07_appspot_1] WHERE (start_time "

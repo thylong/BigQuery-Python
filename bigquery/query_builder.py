@@ -1,4 +1,5 @@
 import logging
+from six import iteritems
 
 
 def render_query(dataset, tables, select=None, conditions=None,
@@ -77,21 +78,16 @@ def _render_select(selections):
         return 'SELECT *'
 
     rendered_selections = []
-    for name, options in selections.iteritems():
-        if not isinstance(options, list):
-            options = [options]
+    for select in selections:
+        field = select.get('field')
+        alias = select.get('alias')
+        alias = "as %s" % alias if alias else ""
+        formatter = select.get('format')
 
-        original_name = name
-        for options_dict in options:
-            name = original_name
-            alias = options_dict.get('alias')
-            alias = "as %s" % alias if alias else ""
+        if formatter:
+            field = _format_select(formatter, field)
 
-            formatter = options_dict.get('format')
-            if formatter:
-                name = _format_select(formatter, name)
-
-            rendered_selections.append("%s %s" % (name, alias))
+        rendered_selections.append("%s %s" % (field, alias))
 
     return "SELECT " + ", ".join(rendered_selections)
 

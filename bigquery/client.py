@@ -1,4 +1,5 @@
 import calendar
+import six
 from collections import defaultdict
 from datetime import datetime, timedelta
 from time import sleep
@@ -16,6 +17,8 @@ from bigquery.errors import (
     JobExecutingException, JobInsertException,
     UnfinishedQueryException, BigQueryTimeoutException
 )
+
+from six import iteritems
 
 BIGQUERY_SCOPE = 'https://www.googleapis.com/auth/bigquery'
 BIGQUERY_SCOPE_READ_ONLY = 'https://www.googleapis.com/auth/bigquery.readonly'
@@ -154,7 +157,7 @@ class BigQueryClient(object):
                 projectId=self.project_id, body=query_data).execute()
         except HttpError as e:
             if query_data.get("dryRun", False):
-                return None, json.loads(e.content)
+                return None, json.loads(e.content.decode('utf-8'))
             raise
 
         job_id = query_reply['jobReference'].get('jobId')
@@ -230,6 +233,7 @@ class BigQueryClient(object):
             'dryRun': dry_run,
             'maxResults': max_results,
         }
+
         return self._submit_query_job(query_data)
 
     def get_query_schema(self, job_id):
@@ -527,7 +531,7 @@ class BigQueryClient(object):
             end_time = calendar.timegm(end_time.utctimetuple())
 
         every_table = self._get_all_tables(dataset_id)
-        app_tables = every_table.get(app_id, {})
+        app_tables = [every_table.get(app_id, {})]
 
         return self._filter_tables_by_time(app_tables, start_time, end_time)
 
@@ -1048,8 +1052,9 @@ class BigQueryClient(object):
             A list of table names that are inside the time range.
         """
 
-        return [table_name for (table_name, unix_seconds) in tables.iteritems()
-                if self._in_range(start_time, end_time, unix_seconds)]
+        return [six.next(six.iterkeys(table)) for table in tables
+                if self._in_range(start_time,
+                                  end_time, six.next(six.itervalues(table)))]
 
     def _in_range(self, start_time, end_time, time):
         """Indicate if the given time falls inside of the given range.
@@ -1167,7 +1172,8 @@ class BigQueryClient(object):
         Returns:
             string of hexed uris
         """
-        return sha256(":".join(uris) + str(time())).hexdigest()
+        uris = ":".join(uris).encode('utf-8')
+        return sha256(uris + str(time()).encode('utf-8')).hexdigest()
 
     def _raise_insert_exception_if_error(self, job):
         error_http = job.get('error')
